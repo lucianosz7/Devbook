@@ -1,8 +1,10 @@
 package database
 
 import (
-	"api/config"
+	"api/src/config"
 	"database/sql"
+
+	_ "github.com/go-sql-driver/mysql" // Driver
 )
 
 func Conectar() (*sql.DB, error) {
