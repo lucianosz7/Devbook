@@ -1,11 +1,13 @@
 package controller
 
 import (
+	"api/src/auth"
 	"api/src/database"
 	"api/src/models"
 	"api/src/repository"
 	"api/src/response"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -27,7 +29,7 @@ func CriarUsuario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if erro = usuario.Preparar(); erro != nil {
+	if erro = usuario.Preparar("cadastro"); erro != nil {
 		response.Erro(w, http.StatusBadRequest, erro)
 		return
 	}
@@ -125,6 +127,17 @@ func AtualizarUsuario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	usuarioIDToken, erro := auth.ExtrairUsuarioID(r)
+	if erro != nil {
+		response.Erro(w, http.StatusUnauthorized, erro)
+		return
+	}
+
+	if usuarioID != int64(usuarioIDToken) {
+		response.Erro(w, http.StatusForbidden, errors.New("Não é possível atualizar um usuário que não seja o seu"))
+		return
+	}
+
 	usuario.ID = uint64(usuarioID)
 	body, erro := io.ReadAll(r.Body)
 	if erro != nil {
@@ -160,6 +173,17 @@ func DeletarUsuario(w http.ResponseWriter, r *http.Request) {
 	usuarioID, erro := strconv.ParseUint(parametros["id"], 10, 64)
 	if erro != nil {
 		response.Erro(w, http.StatusBadRequest, erro)
+		return
+	}
+
+	usuarioIDToken, erro := auth.ExtrairUsuarioID(r)
+	if erro != nil {
+		response.Erro(w, http.StatusUnauthorized, erro)
+		return
+	}
+
+	if usuarioID != uint64(usuarioIDToken) {
+		response.Erro(w, http.StatusForbidden, errors.New("Não é possível deletar um usuário que não seja o seu"))
 		return
 	}
 
